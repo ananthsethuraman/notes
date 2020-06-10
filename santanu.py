@@ -275,9 +275,9 @@ with tf.Session () as sess:
 
         for j in range (num_batch):
             x_bat, y_bat = mds.train.next_batch (mds)
-            sess.run (algo, feed_dict = {x         : x_bat,
-                                         y         : y_bat,
-                                         keep_prob : DROPOUT})
+            sess.run (algo_node, feed_dict = {x         : x_bat,
+                                              y         : y_bat,
+                                              keep_prob : DROPOUT})
             ace_bat, al2e_bat = sess.run ([ace_node, al2e_node],
                                            feed_dict = {x         : x_bat,
                                                         y         : y_bat,
