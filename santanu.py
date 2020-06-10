@@ -221,11 +221,13 @@ y_pred = cnn (x,
 cross_entropy_vec = tf.nn.softmax_cross_entropy_with_logits (logits = y_pred,
                                                              labels = y)
 avg_cross_entropy = tf.reduce_mean (cross_entropy_vec)
+ace_node = avg_cross_entropy
 
 # Algorithm to minimize the objective function
 
 algo = tf.train.AdamOptimizer (learning_rate = LEARNING_RATE)
-algo = algo.minimize (avg_cross_entropy)
+algo = algo.minimize (ace_node)
+algo_node = algo
 
 # Compute accuracy by L2 norm
 
@@ -233,6 +235,7 @@ l2_err_vec = tf.equal (tf.argmax (y_pred, 1),
                        tf.argmax (y,      1))
 l2_err_vec = tf.cast (l2_err_vec, tf.float32)
 avg_l2_err = tf.reduce_mean (l2_err_vec)
+al2e_node = avg_l2_err
 
 #-----------------------------------------------------------------------
 
@@ -275,21 +278,21 @@ with tf.Session () as sess:
             sess.run (algo, feed_dict = {x         : x_bat,
                                          y         : y_bat,
                                          keep_prob : DROPOUT})
-            ace, al2e = sess.run ([avg_cross_entropy, avg_l2_err],
-                                  feed_dict = {x         : x_bat,
-                                               y         : y_bat,
-                                               keep_prob : 1}) 
+            ace_bat, al2e_bat = sess.run ([ace_node, al2e_node],
+                                           feed_dict = {x         : x_bat,
+                                                        y         : y_bat,
+                                                        keep_prob : 1}) 
 
-        print (f'STATUS:: At the end of epoch {i:3} Average cross-entropy error = {ace}    Average L2 error = {al2e}')
+        print (f'STATUS:: At the end of epoch {i:3} Average cross-entropy error = {ace_bat}    Average L2 error = {al2e_bat}')
         print (f'STATUS:: End of epoch {i:3}\n')
 
     print (f'STATUS:: End of training')
 
     # Testing phase
 
-    al2e_test = sess.run (avg_l2_err, feed_dict = {x         : mds.test.images[:256],
-                                                   y         : mds.test.labels[:256],
-                                                   keep_prob : 1})
+    al2e_test = sess.run (al2e_node, feed_dict = {x         : mds.test.images[:256],
+                                                  y         : mds.test.labels[:256],
+                                                  keep_prob : 1})
     print (f'STATUS:: Average L2 error in the testing phase = {al2e_test}')
 
 end_time = time.time ()
