@@ -75,6 +75,12 @@ NUM_OUT_NEURON_FC_LAYER = 1024
 
 NUM_CLASS = 10
 
+# To be used in training
+
+NUM_EPOCH = 20
+BATCH_SIZE = 256
+DROPOUT = 0.75
+
 #-----------------------------------------------------------------------
 
 # Placeholders
@@ -95,47 +101,50 @@ keep_prob = tf.placelholder (tf.float32)
 
 # Coefficients of the convolutional kernel in convolutional layer 1
 
-w_conv1 = tf.Variable (tf.random_normal ([NUM_ROW_KERNEL_CONV_LAYER_1,
+W_conv1 = tf.Variable (tf.random_normal ([NUM_ROW_KERNEL_CONV_LAYER_1,
                                           NUM_COL_KERNEL_CONV_LAYER_1,
                                           NUM_CHANNEL_IN_IMG,
                                           NUM_CHANNEL_CONV_LAYER_1]))
 
 # Bias just after first convolution
 
-b_conv1 = tf.Variable (tf.random_normal ([NUM_CHANNEL_CONV_LAYER_1])
+B_conv1 = tf.Variable (tf.random_normal ([NUM_CHANNEL_CONV_LAYER_1])
 
 # Coefficients of the convolutional kernel in convolutional layer 2
 
-w_conv2 = tf.Variable (tf.random_normal ([NUM_ROW_KERNEL_CONV_LAYER_2,
+W_conv2 = tf.Variable (tf.random_normal ([NUM_ROW_KERNEL_CONV_LAYER_2,
                                           NUM_COL_KERNEL_CONV_LAYER_2,
                                           NUM_CHANNEL_CONV_LAYER_1,
                                           NUM_CHANNEL_CONV_LAYER_2]))
 
 # Bias just after second convolution
 
-b_conv2 = tf.Variable (tf.random_normal ([NUM_CHANNEL_CONV_LAYER_2])
+B_conv2 = tf.Variable (tf.random_normal ([NUM_CHANNEL_CONV_LAYER_2])
 
 # Weights of the full-connected layer
 
-w_fc = tf.Variable (tf.random_normal ([NUM_IN_NEURON_FC_LAYER,
+W_fc = tf.Variable (tf.random_normal ([NUM_IN_NEURON_FC_LAYER,
                                        NUM_OUT_NEURON_FC_LAYER]))
 
 # Bias of the fully-connected layer
 
-b_fc = tf.Variable (tf.random_normal ([NUM_OUT_NEURON_FC_LAYER]))
+B_fc = tf.Variable (tf.random_normal ([NUM_OUT_NEURON_FC_LAYER]))
 
 # Weights of the output layer
 
-w_out = tf.Variable (tf.random_normal ([NUM_OUT_NEURON_FC_LAYER,
+W_out = tf.Variable (tf.random_normal ([NUM_OUT_NEURON_FC_LAYER,
                                         NUM_CLASS]))
 
 # Bias of the output layer
 
-b_out = tf.Variable (tf.random_normal ([NUM_CLASS]))
+B_out = tf.Variable (tf.random_normal ([NUM_CLASS]))
 
 #-----------------------------------------------------------------------
 
-def cnn (x, weight, bias, dropout):
+def cnn (x,
+         w_conv1, w_conv2, w_fc, w_out,
+         b_conv1, b_conv2, b_fc, b_out,
+         dropout):
 
     # First convolutional layer
 
@@ -199,6 +208,92 @@ def cnn (x, weight, bias, dropout):
     # Return value
 
     return out
+
+#-----------------------------------------------------------------------
+
+y_pred = cnn (x,
+              W_conv1, W_conv2, W_fc, W_out,
+              B_conv1, B_conv2, B_fc, B_out,
+              keep_prob)
+
+# Objective function
+
+cross_entropy_vec = tf.nn.softmax_cross_entropy_with_logits (logits = y_pred,
+                                                             labels = y)
+avg_cross_entropy = tf.reduce_mean (cross_entropy_vec)
+
+# Algorithm to minimize the objective function
+
+algo = tf.train.AdamOptimizer (learning_rate = LEARNING_RATE)
+algo = algo.minimize (avg_cross_entropy)
+
+# Compute accuracy by L2 norm
+
+l2_err_vec = tf.equal (tf.argmax (y_pred, 1),
+                       tf.argmax (y,      1))
+l2_err_vec = tf.cast (l2_err_vec, tf.float32)
+avg_l2_err = tf.reduce_mean (l2_err_vec)
+
+#-----------------------------------------------------------------------
+
+# Initialize
+
+init = tf.global_variables_initializer ()
+
+#-----------------------------------------------------------------------
+
+# Load the MNIST data. We use the notation "mds" for MNIST data set
+
+print (f'STATUS:: Begin reading MNIST data set')
+mds =
+    tf.examples.tutorials.mnist.input_data.read_data_sets ("MNIST_data/",
+                                                           one_hot = True)
+print (f'STATUS:: End reading MNIST data set')
+
+#-----------------------------------------------------------------------
+
+# Execute the graph
+
+start_time = time.time ()
+
+num_batch = mds.train.num_examples / BATCH_SIZE
+print ('fSTATUS:: Number of batches = {num_batch:3}')
+
+with tf.Session () as sess:
+    print (f'STATUS:: Begin initializing computational graph')
+    sess.run (init)
+    print (f'STATUS:: End initializing computational graph')
+
+    print (f'STATUS:: Begin of training')
+    print (f'STATUS:: Number of epochs during training = {NUM_EPOCH}\n')
+
+    for i in range (NUM_EPOCH):
+        print (f'STATUS:: Begin of epoch {i:3}')
+
+        for j in range (num_batch):
+            x_bat, y_bat = mds.train.next_batch (mds)
+            sess.run (algo, feed_dict = {x         : x_bat,
+                                         y         : y_bat,
+                                         keep_prob : DROPOUT})
+            ace, al2e = sess.run ([avg_cross_entropy, avg_l2_err],
+                                  feed_dict = {x         : x_bat,
+                                               y         : y_bat,
+                                               keep_prob : 1}) 
+
+        print (f'STATUS:: At the end of epoch {i:3} Average cross-entropy error = {ace}    Average L2 error = {al2e}')
+        print (f'STATUS:: End of epoch {i:3}\n')
+
+    print (f'STATUS:: End of training')
+
+    # Testing phase
+
+    al2e_test = sess.run (avg_l2_err, feed_dict = {x         : mds.test.images[:256],
+                                                   y         : mds.test.labels[:256],
+                                                   keep_prob : 1})
+    print (f'STATUS:: Average L2 error in the testing phase = {al2e_test}')
+
+end_time = time.time ()
+print (f'STATUS:: Total processing time = {end_time - start_time}')
 
 #-----------------------------------------------------------------------
 
