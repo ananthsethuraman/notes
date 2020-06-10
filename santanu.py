@@ -241,7 +241,7 @@ al2e_node = avg_l2_err
 
 # Initialize
 
-init = tf.global_variables_initializer ()
+init_node = tf.global_variables_initializer ()
 
 #-----------------------------------------------------------------------
 
@@ -264,7 +264,7 @@ print ('fSTATUS:: Number of batches = {num_batch:3}')
 
 with tf.Session () as sess:
     print (f'STATUS:: Begin initializing computational graph')
-    sess.run (init)
+    sess.run (init_node)
     print (f'STATUS:: End initializing computational graph')
 
     print (f'STATUS:: Begin of training')
