@@ -96,7 +96,7 @@ NUM_CLASS = 10
 # To be used in training
 
 NUM_EPOCH = 20
-BATCH_SIZE = 256
+BATCH_SIZE = 213
 DROPOUT_KEEP_PROB = 0.75
 LEARNING_RATE = 0.01
 
@@ -105,12 +105,7 @@ LEARNING_RATE = 0.01
 # Placeholders
 
 tmp = NUM_ROW_INP_IMG * NUM_COL_INP_IMG * NUM_CHANNEL_INP_IMG
-raw_x = tf.compat.v1.placeholder (tf.float32,
-                                  [NOT_SPECIFIED_1, tmp])
-x = tf.reshape (raw_x, shape = [NOT_SPECIFIED_2,
-                                NUM_ROW_INP_IMG,
-                                NUM_COL_INP_IMG,
-                                NUM_CHANNEL_INP_IMG])
+x = tf.compat.v1.placeholder (tf.float32, [NOT_SPECIFIED_1, tmp])
 
 y = tf.compat.v1.placeholder (tf.float32, [NOT_SPECIFIED_1, 10])
 
@@ -165,6 +160,13 @@ def cnn (x,
          b_conv1, b_conv2, b_fc, b_out,
          dropout_rate):
 
+    # Change the shape of x
+
+    x = tf.reshape (x, shape = [NOT_SPECIFIED_2,
+                                NUM_ROW_INP_IMG,
+                                NUM_COL_INP_IMG,
+                                NUM_CHANNEL_INP_IMG])
+
     # First convolutional layer
 
     conv1 = tf.nn.conv2d (x, w_conv1,
@@ -213,7 +215,9 @@ def cnn (x,
 
     # Fully Connected Layer
 
+    print ("DEBUG:: About to reshape pool2")
     fc = tf.reshape (pool2, [NOT_SPECIFIED_2, NUM_INP_NEURON_FC_LAYER])
+    print ("DEBUG:: Finished reshaping pool2")
     fc = tf.matmul (fc, w_fc)
     fc = tf.add (fc, b_fc)
     fc = tf.nn.relu (fc)
@@ -293,6 +297,7 @@ with tf.Session () as sess:
 
         for j in range (num_batch):
             x_bat, y_bat = mds.train.next_batch (BATCH_SIZE)
+            print ("DEBUG:: Got a batch")
             sess.run (algo_node, feed_dict = {x         : x_bat,
                                               y         : y_bat,
                                               keep_prob : DROPOUT_KEEP_PROB})
